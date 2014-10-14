@@ -49,7 +49,7 @@ TabbedPane {
                                 text: ListItemData.title
                                 verticalAlignment: VerticalAlignment.Top
                                 layoutProperties: StackLayoutProperties {
-                                
+
                                 }
                                 horizontalAlignment: HorizontalAlignment.Center
                                 textFormat: TextFormat.Plain
@@ -59,14 +59,14 @@ TabbedPane {
                                 text: ListItemData.address
                                 verticalAlignment: VerticalAlignment.Top
                                 layoutProperties: StackLayoutProperties {
-                                
+
                                 }
                                 horizontalAlignment: HorizontalAlignment.Center
                                 textStyle.fontSize: FontSize.XSmall
                                 textStyle.color: Color.Gray
                                 textFormat: TextFormat.Plain
                             }
-                        
+
                         }
                     }
                     layout: GridListLayout {
@@ -76,12 +76,12 @@ TabbedPane {
 
                     onTriggered: {
                         var chosen = dataModel.data(indexPath)
-                        
+
                         if (! bmsheet.isEditMode) {
                             bmsheet.web.evaluateJavaScript("window.location.href=\"" + chosen.address + "\"")
                             bmsheet.close()
                         } else {
-                            bookmarkSource.query = "DELETE FROM bookmark WHERE id="+chosen.id
+                            bookmarkSource.query = "DELETE FROM bookmark WHERE id=" + chosen.id
                             bookmarkSource.load()
                         }
                     }
@@ -91,7 +91,7 @@ TabbedPane {
                     Shortcut {
                         key: "m"
                         onTriggered: {
-                            bmsheet.isEditMode=false
+                            bmsheet.isEditMode = false
                             bmsheet.close()
                         }
                     },
@@ -117,7 +117,7 @@ TabbedPane {
         },
         DataSource {
             id: bookmarkSource
-            source: "asset:///nbsetting.db"
+            source: "file://" + nicobrowser.getDatabasePath()
             type: DataSourceType.Sql
             remote: false
 
@@ -133,7 +133,7 @@ TabbedPane {
                     toast.body = "bookmark added"
                     toast.show()
                 }
-                
+
                 //delete
                 if (bookmarkSource.query.indexOf("WHERE") > 0) {
                     toast.body = "bookmark deleted"
@@ -141,8 +141,7 @@ TabbedPane {
                     bookmarkSource.query = "SELECT id,title,address FROM bookmark"
                     bookmarkSource.load()
                 }
-                
-                
+
             }
         },
         GroupDataModel {
@@ -403,11 +402,18 @@ TabbedPane {
 
                                     onLoadProgressChanged: {
                                         progress.value = loadProgress
+                                        
+                                        if (loadProgress == 100)
+                                            progress.visible = false
                                     }
                                     settings.zoomToFitEnabled: true
 
                                     onUrlChanged: {
                                         webLocationLA.text = url
+                                    }
+
+                                    onNavigationRequested: {
+                                        progress.visible = true
                                     }
 
                                     onTouch: {
@@ -556,7 +562,9 @@ TabbedPane {
     }
 
     onCreationCompleted: {
+        nicobrowser.initDatabase(false)
         addNewTab()
+
     }
 
     peekEnabled: false

@@ -18,6 +18,8 @@
 #define ApplicationUI_HPP_
 
 #include <QObject>
+#include <bb/data/DataSource>
+#include <QUrl>
 
 namespace bb
 {
@@ -40,6 +42,8 @@ class ApplicationUI : public QObject
 public:
     ApplicationUI();
     virtual ~ApplicationUI() {}
+    Q_INVOKABLE bool initDatabase(bool forceInit);
+        Q_INVOKABLE QUrl getDatabasePath();
 
 private slots:
     void onSystemLanguageChanged();

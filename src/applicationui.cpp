@@ -20,6 +20,7 @@
 #include <bb/cascades/QmlDocument>
 #include <bb/cascades/AbstractPane>
 #include <bb/cascades/LocaleHandler>
+#include <bb/data/SqlDataAccess>
 
 using namespace bb::cascades;
 
@@ -43,7 +44,7 @@ ApplicationUI::ApplicationUI() :
     // Create scene document from main.qml asset, the parent is set
     // to ensure the document gets destroyed properly at shut down.
     QmlDocument *qml = QmlDocument::create("asset:///main.qml").parent(this);
-
+    qml->setContextProperty("nicobrowser", this);
     // Create root object for the UI
     AbstractPane *root = qml->createRootObject<AbstractPane>();
 
@@ -62,3 +63,32 @@ void ApplicationUI::onSystemLanguageChanged()
     }
 }
 
+bool ApplicationUI::initDatabase(bool forceInit)
+{
+    QString srcDBPath = QDir::currentPath() + "/app/native/assets/" + "/nbsetting.db";
+    QString destDBPath = QDir::currentPath() + "/data/" + "nbsetting.db";
+
+    if (QFile::exists(destDBPath)) {
+        qDebug() << "database exist in data dir";
+        if (forceInit) {
+            QFile::remove(destDBPath);
+            if (QFile::exists(destDBPath)) {
+                qDebug() << "can't remove database in data dir";
+            } else {
+                qDebug() << "remove old database success";
+            }
+        }
+    }
+
+    if (QFile::copy(srcDBPath, destDBPath)) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+QUrl ApplicationUI::getDatabasePath()
+{
+    QString destDBPath = QDir::currentPath() + "/data/" + "nbsetting.db";
+    return QUrl(destDBPath);
+}
