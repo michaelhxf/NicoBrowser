@@ -212,7 +212,7 @@ TabbedPane {
                 }
 
                 //delete
-                if (historySource.query.indexOf("WHERE") > 0) {
+                if (historySource.query.indexOf("DELETE") == 0) {
                     toast.body = "history clear"
                     toast.show()
                     historySource.query = "SELECT id,title,address,timestamp FROM history"
@@ -343,6 +343,7 @@ TabbedPane {
 
                             onTriggered: {
                                 if (webview.isLoaded) {
+                                    
                                     bookmarkSource.query = "INSERT INTO bookmark (title, address) VALUES ('" + webview.title + "' ,'" + webview.url + "')"
                                     bookmarkSource.load()
                                 }
