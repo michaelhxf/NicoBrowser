@@ -23,6 +23,63 @@ TabbedPane {
     showTabsOnActionBar: false
 
     attachedObjects: [
+        Sheet {
+            id: histsheet
+            property WebView web
+
+            Page {
+                titleBar: TitleBar {
+                    title: "History (h=Close c=Clear)"
+                    appearance: TitleBarAppearance.Plain
+                }
+                ListView {
+                    id: histlist
+                    dataModel: historyModel
+
+                    listItemComponents: ListItemComponent {
+                        type: "item"
+
+                        StandardListItem {
+                            title: ListItemData.title
+                            description: ListItemData.address
+                            status: ListItemData.timestamp
+
+                            shortcuts: [
+                                Shortcut {
+                                    key: "h"
+                                    onTriggered: {
+                                        histsheet.close()
+                                    }
+                                }
+                            ]
+                        }
+
+                    }
+                    onTriggered: {
+                        var chosen = dataModel.data(indexPath)
+                        histsheet.web.evaluateJavaScript("window.location.href=\"" + chosen.address + "\"")
+                        histsheet.close()
+                    }
+
+                }
+                shortcuts: [
+                    Shortcut {
+                        key: "h"
+                        onTriggered: {
+                            histsheet.close()
+                        }
+                    },
+                    Shortcut {
+                        key: "c"
+                        onTriggered: {
+                            historySource.query = "DELETE FROM history"
+                            historySource.load()
+                        }
+
+                    }
+                ]
+            }
+        },
 
         Sheet {
             id: bmsheet
@@ -42,36 +99,11 @@ TabbedPane {
 
                     listItemComponents: ListItemComponent {
                         type: "item"
-                        Container {
-                            preferredHeight: 40
-                            Label {
-                                preferredHeight: 20
-                                text: ListItemData.title
-                                verticalAlignment: VerticalAlignment.Top
-                                layoutProperties: StackLayoutProperties {
 
-                                }
-                                horizontalAlignment: HorizontalAlignment.Center
-                                textFormat: TextFormat.Plain
-                            }
-                            Label {
-                                preferredHeight: 20
-                                text: ListItemData.address
-                                verticalAlignment: VerticalAlignment.Top
-                                layoutProperties: StackLayoutProperties {
-
-                                }
-                                horizontalAlignment: HorizontalAlignment.Center
-                                textStyle.fontSize: FontSize.XSmall
-                                textStyle.color: Color.Gray
-                                textFormat: TextFormat.Plain
-                            }
-
+                        StandardListItem {
+                            title: ListItemData.title
+                            description: ListItemData.address
                         }
-                    }
-                    layout: GridListLayout {
-                        columnCount: 2
-
                     }
 
                     onTriggered: {
@@ -85,6 +117,15 @@ TabbedPane {
                             bookmarkSource.load()
                         }
                     }
+                    shortcuts: [
+                        Shortcut {
+                            key: "m"
+                            onTriggered: {
+                                bmsheet.isEditMode = false
+                                bmsheet.close()
+                            }
+                        }
+                    ]
                 }
 
                 shortcuts: [
@@ -148,6 +189,42 @@ TabbedPane {
             id: bookmarkModel
             sortingKeys: [ "id" ]
             sortedAscending: false
+            grouping: ItemGrouping.None
+        },
+
+        DataSource {
+            id: historySource
+            source: "file://" + nicobrowser.getDatabasePath()
+            remote: false
+            type: DataSourceType.Sql
+
+            onDataLoaded: {
+
+                //select
+                if (historySource.query.indexOf("SELECT") == 0) {
+                    historyModel.clear()
+                    historyModel.insertList(data)
+                }
+
+                //insert
+                if (historySource.query.indexOf("VALUES") > 0) {
+
+                }
+
+                //delete
+                if (historySource.query.indexOf("WHERE") > 0) {
+                    toast.body = "history clear"
+                    toast.show()
+                    historySource.query = "SELECT id,title,address,timestamp FROM history"
+                    historySource.load()
+                }
+            }
+        },
+
+        GroupDataModel {
+            id: historyModel
+            sortedAscending: false
+            sortingKeys: [ "timestamp" ]
             grouping: ItemGrouping.None
         },
 
@@ -276,7 +353,19 @@ TabbedPane {
                                 key: "v"
                             }
                         },
-
+                        ActionItem {
+                            title: "History"
+                            ActionBar.placement: ActionBarPlacement.InOverflow
+                            onTriggered: {
+                                histsheet.open()
+                                historySource.query = "SELECT id, title, address, timestamp FROM history"
+                                historySource.load()
+                                histsheet.web = webview
+                            }
+                            shortcuts: Shortcut {
+                                key: "h"
+                            }
+                        },
                         ActionItem {
                             title: "scroll lock"
                             ActionBar.placement: ActionBarPlacement.InOverflow
@@ -389,6 +478,9 @@ TabbedPane {
 
                                         if (loadRequest.status == WebLoadStatus.Succeeded) {
                                             //webTab = webview.url
+                                            historySource.query = "INSERT INTO history (title, address, timestamp) VALUES ('" + webview.title + "' ,'" + webview.url + "' , " + Date.now() + ")"
+                                            historySource.load()
+
                                             progress.visible = false;
                                             isLoaded = true
                                         }
@@ -402,7 +494,7 @@ TabbedPane {
 
                                     onLoadProgressChanged: {
                                         progress.value = loadProgress
-                                        
+
                                         if (loadProgress == 100)
                                             progress.visible = false
                                     }
@@ -412,9 +504,9 @@ TabbedPane {
                                         webLocationLA.text = url
                                     }
 
-                                    onNavigationRequested: {
-                                        progress.visible = true
-                                    }
+                                    //                                    onNavigationRequested: {
+                                    //                                        progress.visible = true
+                                    //                                    }
 
                                     onTouch: {
                                         if (event.touchType == TouchType.Down && (event.windowX < 60 || event.windowX > 600)) {
