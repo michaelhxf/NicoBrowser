@@ -27,6 +27,10 @@ namespace bb
     {
         class LocaleHandler;
     }
+    namespace data
+    {
+        class SqlDataAccess;
+    }
 }
 
 class QTranslator;
@@ -36,14 +40,18 @@ class QTranslator;
  *
  * Use this object to create and init app UI, to create context objects, to register the new meta types etc.
  */
-class ApplicationUI : public QObject
+class ApplicationUI: public QObject
 {
     Q_OBJECT
 public:
     ApplicationUI();
-    virtual ~ApplicationUI() {}
+    virtual ~ApplicationUI()
+    {
+    }
     Q_INVOKABLE bool initDatabase(bool forceInit);
-        Q_INVOKABLE QUrl getDatabasePath();
+    Q_INVOKABLE QUrl getDatabasePath();
+    Q_INVOKABLE bool importBookmark();
+    Q_INVOKABLE bool exportBookmark();
 
 private slots:
     void onSystemLanguageChanged();

@@ -23,6 +23,7 @@
 #include <bb/data/SqlDataAccess>
 
 using namespace bb::cascades;
+using namespace bb::data;
 
 ApplicationUI::ApplicationUI() :
         QObject()
@@ -31,7 +32,8 @@ ApplicationUI::ApplicationUI() :
     m_pTranslator = new QTranslator(this);
     m_pLocaleHandler = new LocaleHandler(this);
 
-    bool res = QObject::connect(m_pLocaleHandler, SIGNAL(systemLanguageChanged()), this, SLOT(onSystemLanguageChanged()));
+    bool res = QObject::connect(m_pLocaleHandler, SIGNAL(systemLanguageChanged()), this,
+            SLOT(onSystemLanguageChanged()));
     // This is only available in Debug builds
     Q_ASSERT(res);
     // Since the variable is not used in the app, this is added to avoid a
@@ -80,6 +82,10 @@ bool ApplicationUI::initDatabase(bool forceInit)
         }
     }
 
+    //create own dir
+    QDir dir; // New QDir objects default to the application working directory.
+    dir.mkpath(QDir::currentPath() + "/shared/documents/nicobrowser");
+
     if (QFile::copy(srcDBPath, destDBPath)) {
         return true;
     } else {
@@ -91,4 +97,58 @@ QUrl ApplicationUI::getDatabasePath()
 {
     QString destDBPath = QDir::currentPath() + "/data/" + "nbsetting.db";
     return QUrl(destDBPath);
+}
+
+bool ApplicationUI::importBookmark()
+{
+    QString filePath = QDir::currentPath() + "/shared/documents/nicobrowser/"
+            + "nicobrowser_bookmark.txt";
+    QFile textfile(filePath);
+    SqlDataAccess sda(this->getDatabasePath().toString());
+
+    if (textfile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        QTextStream stream(&textfile);
+        QString line;
+        do {
+            line = stream.readLine();
+            //qDebug() << line;
+            QStringList list = line.split(",");
+            if(list.size()>1){
+                sda.execute("insert into bookmark (title, address) values ('"+list[0]+"','"+list[1]+"')");
+                //qDebug()<<list[0]<<list[1];
+            }
+        } while (!line.isNull());
+    }
+    textfile.close();
+
+    return true;
+}
+
+bool ApplicationUI::exportBookmark()
+{
+    SqlDataAccess sda(this->getDatabasePath().toString());
+    QVariant result = sda.execute("select * from bookmark");
+    QVariantList list = result.value<QVariantList>();
+
+    QString filePath = QDir::currentPath() + "/shared/documents/nicobrowser/"
+            + "nicobrowser_bookmark.txt";
+    QFile textfile(filePath);
+    textfile.open(QIODevice::WriteOnly | QIODevice::Text);
+    QTextStream fout(&textfile);
+
+    for (int i = 0; i < list.count(); i++) {
+        //qDebug() << list[i].toMap()["title"].toString() << "," << list[i].toMap()["address"].toString() ;
+        fout << list[i].toMap()["title"].toString() << "," << list[i].toMap()["address"].toString()
+                << "\n";
+    }
+    textfile.close();
+
+    //QString extPath = QDir::currentPath() + "/shared/documents/" + "nicobrowser_bookmark.txt";
+    //qDebug() << filePath <<"\n"<< extPath;
+//    if (QFile::copy(filePath, extPath)) {
+//        return true;
+//    } else {
+//        return false;
+//    }
+    return true;
 }

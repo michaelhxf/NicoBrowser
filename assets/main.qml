@@ -21,6 +21,31 @@ import bb.data 1.0
 TabbedPane {
     id: tabb
     showTabsOnActionBar: false
+    
+    Menu.definition: [
+        MenuDefinition {
+            actions: [
+                ActionItem {
+                    title: "Import"
+                    onTriggered: {
+                        if( nicobrowser.importBookmark()){
+                            toast.body="import sucess"
+                            toast.show()
+                        }
+                    }
+                },
+                ActionItem {
+                    title: "Export"
+                    onTriggered: {
+                       if( nicobrowser.exportBookmark()){
+                           toast.body="export sucess"
+                           toast.show()
+                       }
+                    }
+                }
+            ]
+        }
+    ]
 
     attachedObjects: [
         Sheet {
@@ -32,6 +57,7 @@ TabbedPane {
                     title: "History (h=Close c=Clear)"
                     appearance: TitleBarAppearance.Plain
                 }
+  
                 ListView {
                     id: histlist
                     dataModel: historyModel
@@ -42,7 +68,13 @@ TabbedPane {
                         StandardListItem {
                             title: ListItemData.title
                             description: ListItemData.address
-                            status: ListItemData.timestamp
+                            //status: ListItemData.timestamp
+
+                            onCreationCompleted: {
+                                var _date = new Date()
+                                _date.setTime(Number(ListItemData.timestamp))
+                                status = Qt.formatDateTime(_date,"ddd yyyy.MM.dd hh:mmAP")
+                            }
 
                             shortcuts: [
                                 Shortcut {
@@ -430,7 +462,6 @@ TabbedPane {
                                 key: "p"
                             }
                         }
-
                     ]
 
                     Container {
@@ -447,6 +478,8 @@ TabbedPane {
                                     webPage.actionBarVisibility = ChromeVisibility.Hidden
                                 }
                             }
+                            
+                            
 
                             Container {
 
@@ -488,7 +521,22 @@ TabbedPane {
 
                                         urlTextField.visible = false
                                     }
-
+                                    
+                                    shortcuts: [
+                                        Shortcut {
+                                            key: "0"
+                                            onTriggered: {
+                                                scrollview.scrollToPoint(scrollview.viewableArea.x, scrollview.viewableArea.y+300, ScrollAnimation.Smooth)
+                                            }
+                                        },
+                                        Shortcut {
+                                            key: "x"
+                                            onTriggered: {
+                                                scrollview.scrollToPoint(scrollview.viewableArea.x, scrollview.viewableArea.y-300, ScrollAnimation.Smooth)
+                                            }
+                                        }
+                                    ]
+                                    
                                     onTitleChanged: {
                                         tabtemp.title = webview.title
                                     }
@@ -505,12 +553,13 @@ TabbedPane {
                                         webLocationLA.text = url
                                     }
 
-                                    //                                    onNavigationRequested: {
-                                    //                                        progress.visible = true
-                                    //                                    }
+                                    onNavigationRequested: {
+                                        //if(progress.value<100)
+                                            progress.visible = true
+                                    }
 
                                     onTouch: {
-                                        if (event.touchType == TouchType.Down && (event.windowX < 60 || event.windowX > 600)) {
+                                        if (event.touchType == TouchType.Down && event.windowX < 60) {
                                             swipEnable = true
                                             oldX = event.windowX
                                             oldY = event.windowY
@@ -535,11 +584,11 @@ TabbedPane {
 
                                         if (event.touchType == TouchType.Up) {
                                             if (swipEnable) {
-                                                if (swipX / swipY > 10) {
+                                                if ((swipX / swipY > 10) && swipX > 300) {
                                                     if (isToRightDirection) {
                                                         webview.goBack()
                                                     } else {
-                                                        webview.goForward()
+                                                        //webview.goForward()
                                                     }
                                                 }
 
