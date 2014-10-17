@@ -21,15 +21,15 @@ import bb.data 1.0
 TabbedPane {
     id: tabb
     showTabsOnActionBar: false
-    
+
     Menu.definition: [
         MenuDefinition {
             actions: [
                 ActionItem {
                     title: "Import"
                     onTriggered: {
-                        if( nicobrowser.importBookmark()){
-                            toast.body="import sucess"
+                        if (nicobrowser.importBookmark()) {
+                            toast.body = "import sucess"
                             toast.show()
                         }
                     }
@@ -37,10 +37,10 @@ TabbedPane {
                 ActionItem {
                     title: "Export"
                     onTriggered: {
-                       if( nicobrowser.exportBookmark()){
-                           toast.body="export sucess"
-                           toast.show()
-                       }
+                        if (nicobrowser.exportBookmark()) {
+                            toast.body = "export sucess"
+                            toast.show()
+                        }
                     }
                 }
             ]
@@ -57,7 +57,7 @@ TabbedPane {
                     title: "History (h=Close c=Clear)"
                     appearance: TitleBarAppearance.Plain
                 }
-  
+
                 ListView {
                     id: histlist
                     dataModel: historyModel
@@ -73,7 +73,7 @@ TabbedPane {
                             onCreationCompleted: {
                                 var _date = new Date()
                                 _date.setTime(Number(ListItemData.timestamp))
-                                status = Qt.formatDateTime(_date,"ddd yyyy.MM.dd hh:mmAP")
+                                status = Qt.formatDateTime(_date, "ddd yyyy.MM.dd hh:mmAP")
                             }
 
                             shortcuts: [
@@ -92,6 +92,15 @@ TabbedPane {
                         histsheet.web.evaluateJavaScript("window.location.href=\"" + chosen.address + "\"")
                         histsheet.close()
                     }
+
+                    shortcuts: [
+                        Shortcut {
+                            key: "h"
+                            onTriggered: {
+                                histsheet.close()
+                            }
+                        }
+                    ]
 
                 }
                 shortcuts: [
@@ -375,7 +384,7 @@ TabbedPane {
 
                             onTriggered: {
                                 if (webview.isLoaded) {
-                                    
+
                                     bookmarkSource.query = "INSERT INTO bookmark (title, address) VALUES ('" + webview.title + "' ,'" + webview.url + "')"
                                     bookmarkSource.load()
                                 }
@@ -478,8 +487,6 @@ TabbedPane {
                                     webPage.actionBarVisibility = ChromeVisibility.Hidden
                                 }
                             }
-                            
-                            
 
                             Container {
 
@@ -499,6 +506,8 @@ TabbedPane {
                                     onLoadingChanged: {
                                         if (loadRequest.status == WebLoadStatus.Started) {
                                             progress.visible = true
+                                            activity.stop()
+                                            activity.visible = false
 
                                             //hide
                                             webPage.actionBarVisibility = ChromeVisibility.Hidden
@@ -514,6 +523,8 @@ TabbedPane {
                                             //webTab = webview.url
                                             historySource.query = "INSERT INTO history (title, address, timestamp) VALUES ('" + webview.title + "' ,'" + webview.url + "' , " + Date.now() + ")"
                                             historySource.load()
+                                            activity.stop()
+                                            activity.visible = false
 
                                             progress.visible = false;
                                             isLoaded = true
@@ -521,22 +532,7 @@ TabbedPane {
 
                                         urlTextField.visible = false
                                     }
-                                    
-                                    shortcuts: [
-                                        Shortcut {
-                                            key: "0"
-                                            onTriggered: {
-                                                scrollview.scrollToPoint(scrollview.viewableArea.x, scrollview.viewableArea.y+300, ScrollAnimation.Smooth)
-                                            }
-                                        },
-                                        Shortcut {
-                                            key: "x"
-                                            onTriggered: {
-                                                scrollview.scrollToPoint(scrollview.viewableArea.x, scrollview.viewableArea.y-300, ScrollAnimation.Smooth)
-                                            }
-                                        }
-                                    ]
-                                    
+
                                     onTitleChanged: {
                                         tabtemp.title = webview.title
                                     }
@@ -554,8 +550,8 @@ TabbedPane {
                                     }
 
                                     onNavigationRequested: {
-                                        //if(progress.value<100)
-                                            progress.visible = true
+                                        activity.visible = true
+                                        activity.start()
                                     }
 
                                     onTouch: {
@@ -621,6 +617,17 @@ TabbedPane {
                             horizontalAlignment: HorizontalAlignment.Center
                         }
 
+                        ActivityIndicator {
+                            visible: false
+                            id: activity
+                            layoutProperties: StackLayoutProperties {
+
+                            }
+                            horizontalAlignment: HorizontalAlignment.Right
+                            verticalAlignment: VerticalAlignment.Bottom
+
+                        }
+
                         Container {
                             visible: true
                             id: showBarBtn
@@ -673,6 +680,10 @@ TabbedPane {
                                 id: urlTextField
                                 visible: false
 
+                                onTextChanging: {
+                                    urlTextField.visible = true
+                                }
+
                                 shortcuts: [
                                     Shortcut {
                                         key: "Enter"
@@ -682,10 +693,16 @@ TabbedPane {
                                                 webview.evaluateJavaScript("window.location.href=\"http://" + urlTextField.text + "\"")
 
                                             } else {
-                                                webview.evaluateJavaScript("window.location.href=\"http://www.google.com/?q=" + urlTextField.text + "\"")
+                                                webview.evaluateJavaScript("window.location.href=\"http://www.google.com/search?q=" + urlTextField.text + "\"")
                                             }
 
                                             webview.requestFocus()
+                                        }
+                                    },
+                                    Shortcut {
+                                        key: "Space"
+                                        onTriggered: {
+                                            urlTextField.text += "."
                                         }
                                     }
                                 ]
